@@ -16,6 +16,7 @@ import (
 
 func TestAccAWSSSMDocument_basic(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -24,17 +25,14 @@ func TestAccAWSSSMDocument_basic(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocumentBasicConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "document_format", "JSON"),
-					resource.TestMatchResourceAttr("aws_ssm_document.foo", "arn",
-						regexp.MustCompile(`^arn:aws:ssm:[a-z]{2}-[a-z]+-\d{1}:\d{12}:document/.*$`)),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "tags.%", "1"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "tags.Name", "My Document"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "document_format", "JSON"),
+					testAccCheckResourceAttrRegionalARN(resourceName, "arn", "ssm", fmt.Sprintf("document/%s", name)),
+					resource.TestCheckResourceAttr(resourceName, "tags.%", "0"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -44,6 +42,7 @@ func TestAccAWSSSMDocument_basic(t *testing.T) {
 
 func TestAccAWSSSMDocument_update(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -52,28 +51,23 @@ func TestAccAWSSSMDocument_update(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocument20Config(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "schema_version", "2.0"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "latest_version", "1"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "default_version", "1"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "schema_version", "2.0"),
+					resource.TestCheckResourceAttr(resourceName, "latest_version", "1"),
+					resource.TestCheckResourceAttr(resourceName, "default_version", "1"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			{
 				Config: testAccAWSSSMDocument20UpdatedConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "latest_version", "2"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "default_version", "2"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "latest_version", "2"),
+					resource.TestCheckResourceAttr(resourceName, "default_version", "2"),
 				),
 			},
 		},
@@ -82,6 +76,7 @@ func TestAccAWSSSMDocument_update(t *testing.T) {
 
 func TestAccAWSSSMDocument_permission_public(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -90,15 +85,13 @@ func TestAccAWSSSMDocument_permission_public(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocumentPublicPermissionConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "permissions.type", "Share"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "permissions.account_ids", "all"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "permissions.type", "Share"),
+					resource.TestCheckResourceAttr(resourceName, "permissions.account_ids", "all"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -108,6 +101,7 @@ func TestAccAWSSSMDocument_permission_public(t *testing.T) {
 
 func TestAccAWSSSMDocument_permission_private(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	ids := "123456789012"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -117,13 +111,12 @@ func TestAccAWSSSMDocument_permission_private(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocumentPrivatePermissionConfig(name, ids),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "permissions.type", "Share"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "permissions.type", "Share"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -133,6 +126,7 @@ func TestAccAWSSSMDocument_permission_private(t *testing.T) {
 
 func TestAccAWSSSMDocument_permission_batching(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	ids := "123456789012,123456789013,123456789014,123456789015,123456789016,123456789017,123456789018,123456789019,123456789020,123456789021,123456789022,123456789023,123456789024,123456789025,123456789026,123456789027,123456789028,123456789029,123456789030,123456789031,123456789032"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -142,13 +136,12 @@ func TestAccAWSSSMDocument_permission_batching(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocumentPrivatePermissionConfig(name, ids),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "permissions.type", "Share"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "permissions.type", "Share"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -158,6 +151,7 @@ func TestAccAWSSSMDocument_permission_batching(t *testing.T) {
 
 func TestAccAWSSSMDocument_permission_change(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	idsInitial := "123456789012,123456789013"
 	idsRemove := "123456789012"
 	idsAdd := "123456789012,123456789014"
@@ -169,33 +163,30 @@ func TestAccAWSSSMDocument_permission_change(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocumentPrivatePermissionConfig(name, idsInitial),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "permissions.type", "Share"),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "permissions.account_ids", idsInitial),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "permissions.type", "Share"),
+					resource.TestCheckResourceAttr(resourceName, "permissions.account_ids", idsInitial),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			{
 				Config: testAccAWSSSMDocumentPrivatePermissionConfig(name, idsRemove),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "permissions.type", "Share"),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "permissions.account_ids", idsRemove),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "permissions.type", "Share"),
+					resource.TestCheckResourceAttr(resourceName, "permissions.account_ids", idsRemove),
 				),
 			},
 			{
 				Config: testAccAWSSSMDocumentPrivatePermissionConfig(name, idsAdd),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "permissions.type", "Share"),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "permissions.account_ids", idsAdd),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "permissions.type", "Share"),
+					resource.TestCheckResourceAttr(resourceName, "permissions.account_ids", idsAdd),
 				),
 			},
 		},
@@ -204,6 +195,7 @@ func TestAccAWSSSMDocument_permission_change(t *testing.T) {
 
 func TestAccAWSSSMDocument_params(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -212,23 +204,17 @@ func TestAccAWSSSMDocument_params(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocumentParamConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "parameter.0.name", "commands"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "parameter.0.type", "StringList"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "parameter.1.name", "workingDirectory"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "parameter.1.type", "String"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "parameter.2.name", "executionTimeout"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "parameter.2.type", "String"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "parameter.0.name", "commands"),
+					resource.TestCheckResourceAttr(resourceName, "parameter.0.type", "StringList"),
+					resource.TestCheckResourceAttr(resourceName, "parameter.1.name", "workingDirectory"),
+					resource.TestCheckResourceAttr(resourceName, "parameter.1.type", "String"),
+					resource.TestCheckResourceAttr(resourceName, "parameter.2.name", "executionTimeout"),
+					resource.TestCheckResourceAttr(resourceName, "parameter.2.type", "String"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -238,6 +224,7 @@ func TestAccAWSSSMDocument_params(t *testing.T) {
 
 func TestAccAWSSSMDocument_automation(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -246,13 +233,12 @@ func TestAccAWSSSMDocument_automation(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocumentTypeAutomationConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "document_type", "Automation"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "document_type", "Automation"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -333,6 +319,7 @@ func TestAccAWSSSMDocument_SchemaVersion_1(t *testing.T) {
 
 func TestAccAWSSSMDocument_session(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -341,13 +328,12 @@ func TestAccAWSSSMDocument_session(t *testing.T) {
 			{
 				Config: testAccAWSSSMDocumentTypeSessionConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr(
-						"aws_ssm_document.foo", "document_type", "Session"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "document_type", "Session"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -357,6 +343,7 @@ func TestAccAWSSSMDocument_session(t *testing.T) {
 
 func TestAccAWSSSMDocument_DocumentFormat_YAML(t *testing.T) {
 	name := acctest.RandString(10)
+	resourceName := "aws_ssm_document.foo"
 	content1 := `
 ---
 schemaVersion: '2.2'
@@ -387,22 +374,22 @@ mainSteps:
 			{
 				Config: testAccAWSSSMDocumentConfig_DocumentFormat_YAML(name, content1),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "content", content1+"\n"),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "document_format", "YAML"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "content", content1+"\n"),
+					resource.TestCheckResourceAttr(resourceName, "document_format", "YAML"),
 				),
 			},
 			{
-				ResourceName:      "aws_ssm_document.foo",
+				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			{
 				Config: testAccAWSSSMDocumentConfig_DocumentFormat_YAML(name, content2),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSSSMDocumentExists("aws_ssm_document.foo"),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "content", content2+"\n"),
-					resource.TestCheckResourceAttr("aws_ssm_document.foo", "document_format", "YAML"),
+					testAccCheckAWSSSMDocumentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "content", content2+"\n"),
+					resource.TestCheckResourceAttr(resourceName, "document_format", "YAML"),
 				),
 			},
 		},
@@ -487,7 +474,7 @@ func testAccCheckAWSSSMDocumentDestroy(s *terraform.State) error {
 
 		if err != nil {
 			// InvalidDocument means it's gone, this is good
-			if wserr, ok := err.(awserr.Error); ok && wserr.Code() == "InvalidDocument" {
+			if wserr, ok := err.(awserr.Error); ok && wserr.Code() == ssm.ErrCodeInvalidDocument {
 				return nil
 			}
 			return err
@@ -510,12 +497,8 @@ Based on examples from here: https://docs.aws.amazon.com/AWSEC2/latest/WindowsGu
 func testAccAWSSSMDocumentBasicConfig(rName string) string {
 	return fmt.Sprintf(`
 resource "aws_ssm_document" "foo" {
-  name          = "test_document-%s"
+  name          = "%s"
   document_type = "Command"
-
-  tags = {
-    Name = "My Document"
-  }
 
   content = <<DOC
     {
